@@ -17,13 +17,12 @@ class NeuralNetworkViz(QtWidgets.QWidget):
         self.neuron_locations = {}
         self.show()
 
-
     def paintEvent(self, event: QtGui.QPaintEvent) -> None:
         painter = QtGui.QPainter()
         painter.begin(self)
 
         self.show_network(painter)
-        
+
         painter.end()
 
     def update(self) -> None:
@@ -40,32 +39,39 @@ class NeuralNetworkViz(QtWidgets.QWidget):
         width = self.frameGeometry().width()
         layer_nodes = self.snake.network.layer_nodes
 
-        default_offset = 30
+        default_offset = 60
         h_offset = default_offset
         inputs = self.snake.vision_as_array
         out = self.snake.network.feed_forward(inputs)  # @TODO: shouldnt need this
         max_out = np.argmax(out)
-        
+
         # Draw nodes
         for layer, num_nodes in enumerate(layer_nodes):
-            v_offset = (height - ((2*radius + vertical_space) * num_nodes))/2
+            v_offset = (height - ((2 * radius + vertical_space) * num_nodes)) / 2
             activations = None
             if layer > 0:
-                activations = self.snake.network.params['A' + str(layer)]
+                activations = self.snake.network.params["A" + str(layer)]
 
             for node in range(num_nodes):
                 x_loc = h_offset
-                y_loc = node * (radius*2 + vertical_space) + v_offset
+                y_loc = node * (radius * 2 + vertical_space) + v_offset
                 t = (layer, node)
                 if t not in self.neuron_locations:
                     self.neuron_locations[t] = (x_loc, y_loc + radius)
-                
+
                 painter.setBrush(QtGui.QBrush(Qt.white, Qt.NoBrush))
                 # Input layer
                 if layer == 0:
                     # Is there a value being fed in
                     if inputs[node, 0] > 0:
                         painter.setBrush(QtGui.QBrush(Qt.green))
+                        painter.drawText(
+                            h_offset - 30,
+                            node * (radius * 2 + vertical_space)
+                            + v_offset
+                            + 1.5 * radius,
+                            str(round(inputs[node, 0], 2)),
+                        )
                     else:
                         painter.setBrush(QtGui.QBrush(Qt.white))
                 # Hidden layers
@@ -75,18 +81,37 @@ class NeuralNetworkViz(QtWidgets.QWidget):
                     except:
                         print(self.snake.network.params)
                         import sys
+
                         sys.exit(-1)
-                    painter.setBrush(QtGui.QBrush(QtGui.QColor.fromHslF(125/239, saturation, 120/240)))
+                    painter.setBrush(
+                        QtGui.QBrush(
+                            QtGui.QColor.fromHslF(125 / 239, saturation, 120 / 240)
+                        )
+                    )
+                    painter.drawText(
+                        h_offset + 5,
+                        node * (radius * 2 + vertical_space) + v_offset + 1.5 * radius,
+                        str(round(inputs[node, 0], 2)),
+                    )
                 # Output layer
                 elif layer == len(layer_nodes) - 1:
-                    text = ('U', 'D', 'L', 'R')[node]
-                    painter.drawText(h_offset + 30, node * (radius*2 + vertical_space) + v_offset + 1.5*radius, text)
+                    text = ("U", "D", "L", "R")[node]
+                    painter.drawText(
+                        h_offset + 30,
+                        node * (radius * 2 + vertical_space) + v_offset + 1.5 * radius,
+                        text,
+                    )
+                    painter.drawText(
+                        h_offset + 50,
+                        node * (radius * 2 + vertical_space) + v_offset + 1.5 * radius,
+                        str(round(inputs[node, 0], 2)),
+                    )
                     if node == max_out:
                         painter.setBrush(QtGui.QBrush(Qt.green))
                     else:
                         painter.setBrush(QtGui.QBrush(Qt.white))
 
-                painter.drawEllipse(x_loc, y_loc, radius*2, radius*2)
+                painter.drawEllipse(x_loc, y_loc, radius * 2, radius * 2)
             h_offset += 150
 
         # Reset horizontal offset for the weights
@@ -95,7 +120,7 @@ class NeuralNetworkViz(QtWidgets.QWidget):
         # Draw weights
         # For each layer starting at 1
         for l in range(1, len(layer_nodes)):
-            weights = self.snake.network.params['W' + str(l)]
+            weights = self.snake.network.params["W" + str(l)]
             prev_nodes = weights.shape[1]
             curr_nodes = weights.shape[0]
             # For each node from the previous layer
@@ -109,7 +134,7 @@ class NeuralNetworkViz(QtWidgets.QWidget):
                     else:
                         painter.setPen(QtGui.QPen(Qt.red))
                     # Grab locations of the nodes
-                    start = self.neuron_locations[(l-1, prev_node)]
+                    start = self.neuron_locations[(l - 1, prev_node)]
                     end = self.neuron_locations[(l, curr_node)]
                     # Offset start[0] by diameter of circle so that the line starts on the right of the circle
-                    painter.drawLine(start[0] + radius*2, start[1], end[0], end[1])
+                    painter.drawLine(start[0] + radius * 2, start[1], end[0], end[1])
